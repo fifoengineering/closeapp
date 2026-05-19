@@ -30,18 +30,20 @@ import sys
 
 import httpx
 
-if "debug" in sys.argv:
-    level = logging.DEBUG
-elif "info" in sys.argv:
-    level = logging.INFO
-else:
+
+def get_logger(name: str) -> logging.Logger:
     level = logging.ERROR
+    if "debug" in sys.argv:
+        level = logging.DEBUG
+    elif "info" in sys.argv:
+        level = logging.INFO
+    logging.basicConfig(
+        level=level, format="%(asctime)s %(levelname)-6s %(message)s"
+    )
+    return logging.getLogger(name)
 
-logging.basicConfig(
-    level=level, format="%(asctime)s %(levelname)-6s %(message)s"
-)
-log = logging.getLogger()
 
+log = get_logger(__name__)
 
 CLOSE_ENDPOINT_URL = "https://api.close.com/buildwithus/"
 
@@ -94,11 +96,11 @@ class ExerciseInput:
         """
         try:
             log.debug("Processing encoded input data: %s", data)
-            self.data = data
-            decoded = json.loads(data)
-            self.traits = decoded["traits"]
-            self.key = decoded["key"]
-            self.description = decoded["meta"]["description"]
+            self.data_str = data
+            data_obj = json.loads(data)
+            self.traits = data_obj["traits"]
+            self.key = data_obj["key"]
+            self.description = data_obj["meta"]["description"]
 
         except ValueError as err:
             raise InputError("JSON decoding error on input") from err
@@ -110,7 +112,10 @@ class ExerciseInput:
     @property
     def formatted(self):
         """Displays the JSON encoded input data with indentation"""
-        return json.dumps(json.loads(self.data), indent=2)
+        return json.dumps(json.loads(self.data_str), indent=2)
+
+    def npformatted(self):
+        return json.dumps(json.loads(self.data_str), indent=2)
 
 
 class CloseApi:
@@ -304,5 +309,9 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
     main()
+
+
+def getFormatted() -> str:
+    input = ExerciseInput("asdf")
+    return input.npformatted()

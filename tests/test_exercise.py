@@ -1,6 +1,5 @@
-import hashlib
+# import hashlib
 import json
-
 
 import httpx
 import pytest
@@ -12,7 +11,9 @@ from exercise import (
     CLOSE_ENDPOINT_URL,
     CloseApi,
     ExerciseInput,
+    get_hashes,
     hash,
+    HashingError,
     InputError,
     VerificationError,
 )
@@ -25,14 +26,17 @@ DI_TRAITS = [DI_TRAIT1, DI_TRAIT2, DI_TRAIT3]
 DI_KEY = "test-key"
 DI_DESCRIPTION = "test-description"
 DI_META = {"description": DI_DESCRIPTION}
+DI_VALID = {"traits": DI_TRAITS, "key": DI_KEY, "meta": DI_META}
 
-EI_VALID = json.dumps({"traits": DI_TRAITS, "key": DI_KEY, "meta": DI_META})
+EI_VALID = json.dumps(DI_VALID)
+
+TEST_HASH = "test-hash"
 
 
 def test_ExerciseInput():
 
     input = ExerciseInput(EI_VALID)
-    assert input.data == EI_VALID
+    assert input.data_str == EI_VALID
     assert input.traits == DI_TRAITS
     assert input.key == DI_KEY
     assert input.description == DI_DESCRIPTION
@@ -40,7 +44,7 @@ def test_ExerciseInput():
     with pytest.raises(InputError):
         input = ExerciseInput("")
 
-    assert input.formatted == json.dumps(json.loads(EI_VALID), indent=2)
+    assert input.formatted == json.dumps(DI_VALID, indent=2)
 
     EI_INVALID1 = json.dumps({"key": DI_KEY, "meta": DI_META})
 
@@ -117,17 +121,104 @@ def test_CloseApi_get_verification_id(httpx_mock: HTTPXMock):
         api.get_verification_id(hashes)
 
 
-def test_hash(mocker):
-
-    mock_blake = mocker.Mock()
-    mock_blake.hexdigest.return_value = "test-hash"
-    mocker.patch("hashlib.blake2b", return_value=mock_blake)
-
-    TEST_DATA = "test-data"
-    TEST_KEY = "test-key"
-    digest = hash(TEST_DATA, TEST_KEY)
-    assert digest == "test-hash"
+@pytest.fixture
+def blake_instance(mocker):
+    blake_inst = mocker.Mock()
+    blake_inst.hexdigest.return_value = TEST_HASH
+    return blake_inst
 
 
-def test_get_hashes(mocker):
+@pytest.fixture
+def blake_class(mocker, blake_instance):
+    blake_cls = mocker.patch("hashlib.blake2b", return_value=blake_instance)
+    return blake_cls
+
+
+def test_hash(blake_class, blake_instance):
+    val = "test-val"
+    key = "test-key"
+    digest = hash(val, key)
+    assert digest == TEST_HASH
+    blake_class.assert_called_once_with(val.encode(), key=key.encode())
+    blake_instance.hexdigest.assert_called_once()
+
+    blake_class.side_effect = Exception("test error handling")
+    with pytest.raises(HashingError) as e:
+        digest = hash(val, key)
+    assert e.type is HashingError
+
+
+def test_get_hashes(mocker, blake_class, blake_instance):
+    vals = ["a", "b"]
+    key = "test-key"
+    hashes = get_hashes(vals, key)
+    blake_class.assert_has_calls(
+        [
+            mocker.call("a".encode(), key=key.encode()),
+            mocker.call("b".encode(), key=key.encode()),
+        ]
+    )
+    blake_instance.hexdigest.assert_has_calls(
+        [
+            mocker.call(),
+            mocker.call(),
+        ]
+    )
+    assert hashes == [TEST_HASH, TEST_HASH]
+
+
+@pytest.fixture
+def input(mocker):
+    input_inst = mocker.Mock()
+    input_inst.formatted.return_value = "test-formatted"
+    input_cls = mocker.patch("exercise.ExerciseInput", return_value=input_inst)
+    return input_cls
+
+
+@pytest.fixture
+def api(mocker, input):
+    api_cls = mocker.patch("exercise.CloseApi", return_value=input)
+    return api_cls
+
+
+from unittest.mock import patch
+from exercise import ExerciseInput
+import exercise
+
+
+def test_main_InputError(mocker, capsys, api, input):
+
+    print(f"input={input}")
+
+    with patch("exercise.ExerciseInput") as MockExerciseInput:
+        mock_inst = MockExerciseInput.return_value
+        mock_inst.npformatted.return_value = "test-formatted-2"
+
+        print(exercise.getFormatted())
+
+        test_inp = exercise.ExerciseInput()
+
+        print(f"test_inp={test_inp}")
+        print(f"test_inpt.npformatted={test_inp.npformatted()}")
+
+    # test_inp = input(123)
+    # print(f"test_inp={test_inp}")
+
+    # test_inp2 = ExerciseInput("asdf")
+    # print(f"test_inp2={test_inp2}")
+
+    # api = mocker.patch("exercise.CloseApi")
+    # api.get_exercise_input.return_value = "test-input"
+    # api.get_verification_id.return_value = "test-vid"
+    # print(api.get_exercise_input())
+    # print(api.get_verification_id())
+    # cap = capsys.readouterr()
+    # print(cap.out)
+
+
+def test_monkey_patching(monkeypatch):
+    # monkeypatch(
+    #    exercise,
+    #    "ExerciseInput",
+    # )
     pass

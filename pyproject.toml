@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "coverage>=7.14.0",
     "httpx>=0.28.1",
     "pytest>=9.0.3",
     "pytest-httpx>=0.36.2",
