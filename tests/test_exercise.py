@@ -122,7 +122,7 @@ def test_CloseApi_get_verification_id(httpx_mock: HTTPXMock):
         api.get_verification_id(hashes)
 
 
-def test_hash(mocker):
+def test_hash_success(mocker):
     mock_cls = mocker.patch("hashlib.blake2b")
     mock_cls.return_value.hexdigest.return_value = TEST_HASH
     assert hash("val", "key") == TEST_HASH
@@ -130,6 +130,14 @@ def test_hash(mocker):
         "val".encode(),
         key="key".encode(),
     )
+
+
+def test_hash_HashingError(mocker):
+    mock_cls = mocker.patch("hashlib.blake2b")
+    mock_cls.return_value.hexdigest.side_effect = Exception("some exception")
+    with pytest.raises(HashingError) as e:
+        hash("val", "key")
+    assert e.type is HashingError
 
 
 def test_get_hashes(mocker):
