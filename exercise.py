@@ -24,14 +24,13 @@ Endpoint response directions:
 """
 
 import argparse
-from dataclasses import dataclass
 import hashlib
 import json
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
-
 
 DEFAULT_ENDPOINT_URL = "https://api.close.com/buildwithus/"
 
@@ -154,7 +153,8 @@ class ExerciseInput:
       description = meta["description"]
       if not isinstance(description, str):
         raise InputError(
-          f"Input value for meta.description must be str (received {description})"
+          "Input value for meta.description must "
+          f"be str (received {description})"
         )
 
       return cls(traits, key, description)

@@ -2,24 +2,23 @@ import json
 
 import httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from exercise import (
+  DEFAULT_ENDPOINT_URL,
   ApiRequestError,
   ApiResponseError,
   CloseApi,
-  DEFAULT_ENDPOINT_URL,
-  display_result,
   ExerciseInput,
   ExerciseResult,
-  generate_hash_list,
-  generate_hash,
   HashingError,
   InputError,
-  main,
-  run_exercise,
   VerificationError,
   VerificationResponse,
+  display_result,
+  generate_hash,
+  generate_hash_list,
+  main,
+  run_exercise,
 )
 
 INP_TRAIT1 = "hot"
@@ -30,9 +29,15 @@ INP_DESC = "test-description"
 INP_META = {"description": INP_DESC}
 INP_OBJ = {"traits": INP_TRAITS, "key": INP_KEY, "meta": INP_META}
 
-# generated from INP_TRAIT1 / INP_TRAIT2 & INP_KEY ("hot" / "cold" & "test-key")
-TRAIT1_KEY_DIGEST = "dce23ca22894404d37feb6d0c40dbd2a08f46798ce737597168677a84ee99eab118f92b2b9094c46c0be2ab24e0cece16ad9039704bb2a1ffa0d8fe05a7d0d18"
-TRAIT2_KEY_DIGEST = "0a70b5e757c59dfd77df4e70e739420b9c6500e6350356f159ee8b75820f6c2ea18be11c3095b3d0e3eceb74af770a3a80de4f7033a08246d5f8540c1beb22e8"
+# generated from INP_TRAIT1/INP_TRAIT2 & INP_KEY ("hot"/"cold" & "test-key")
+TRAIT1_KEY_DIGEST = (
+  "dce23ca22894404d37feb6d0c40dbd2a08f46798ce737597168677a84ee99eab"
+  "118f92b2b9094c46c0be2ab24e0cece16ad9039704bb2a1ffa0d8fe05a7d0d18"
+)
+TRAIT2_KEY_DIGEST = (
+  "0a70b5e757c59dfd77df4e70e739420b9c6500e6350356f159ee8b75820f6c2e"
+  "a18be11c3095b3d0e3eceb74af770a3a80de4f7033a08246d5f8540c1beb22e8"
+)
 
 
 @pytest.fixture
@@ -83,7 +88,11 @@ def test_ExerciseInput_from_json_success(json_input):
       "Missing key 'description'",
     ),
     (
-      {"key": INP_KEY, "meta": {"description": 123}, "traits": ["a", "b"]},
+      {
+        "key": INP_KEY,
+        "meta": {"description": 123},
+        "traits": ["a", "b"],
+      },
       "meta.description must be str",
     ),
   ],
